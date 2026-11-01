@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vlad Tetyorko and mavlink4j contributors
 # sitl/docker/Dockerfile
 #
 # Runs the OFFICIAL, prebuilt ArduPilot SITL binaries published by the

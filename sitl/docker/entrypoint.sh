@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vlad Tetyorko and mavlink4j contributors
 # sitl/docker/entrypoint.sh
 #
 # Launches one ArduPilot SITL instance with a distinct MAVLink sysid, pushes

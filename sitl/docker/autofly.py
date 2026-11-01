@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vlad Tetyorko and mavlink4j contributors
 """sitl/docker/autofly.py
 
 Internal test-harness "GCS": connects to the SITL vehicle's own local
