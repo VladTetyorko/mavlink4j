@@ -1,5 +1,5 @@
 name: mutation
-# Informational only (OD-8): the score is reported, never gates a merge.
+# Informational only: the score is reported, never gates a merge.
 on:
   schedule:
     - cron: '0 3 * * 1'

@@ -63,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * there is no protocol-level "this peer is gone" signal available to L4 from {@code PeerDirectory}
  * alone. {@link #lostTargetPausesWithoutKillingTheTask} therefore drives a fake {@code PeerDirectory}
  * that -- unlike the real one -- can be told to "forget" a peer, to prove {@link ManualControlService}'s
- * own pause logic is correct if it is ever exercised (e.g. by a host's claim-aware
+ * own pause logic is correct if it is ever exercised (e.g. by a host's ownership-aware
  * {@code PeerDirectory} wrapper). The real {@code PeerDirectory} never forgets a peer, so it
  * cannot reach this branch today.
  */
@@ -297,7 +297,7 @@ class ManualControlServiceTest {
         scheduler.tick(); // reachable -- a frame goes out
         assertEquals(1, sink.sentCount());
 
-        peers.forget(TARGET); // simulate the target going silent / claim lost
+        peers.forget(TARGET); // simulate the target going silent
         clock.advance(TICK);
         scheduler.tick(); // must pause, not throw, not stop the schedule
         clock.advance(TICK);

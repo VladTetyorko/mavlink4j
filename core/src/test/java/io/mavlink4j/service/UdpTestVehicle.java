@@ -104,7 +104,7 @@ public final class UdpTestVehicle implements AutoCloseable {
     }
 
     /**
-     * Simulates this vehicle's transport address changing (a re-elected claim, a NAT rebind): closes
+     * Simulates this vehicle's transport address changing (a NAT rebind, a relay taking over): closes
      * the current link and opens a fresh one to the same gateway, under the identical MAVLink
      * identity (sysid/compid unchanged). Used to prove a service re-resolves a peer's address on
      * every tick rather than caching it at engage-time.

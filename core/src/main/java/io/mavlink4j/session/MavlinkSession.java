@@ -203,7 +203,7 @@ public final class MavlinkSession implements AutoCloseable {
     /**
      * Sends {@code message} to one explicit {@code address} on {@code link}, bypassing the {@link
      * PeerDirectory}. For the one caller that must reach an address the directory has not learned
-     * (the operator-confirmed re-push of a signing key to where an unsigned vehicle is now heard);
+     * (for example, re-sending a signing key to the address an unsigned vehicle is now heard from);
      * signed with the key {@code target}'s system resolves to, plain when it has none.
      *
      * @throws IllegalArgumentException if {@code link} is not registered

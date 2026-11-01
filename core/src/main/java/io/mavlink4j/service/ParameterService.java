@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@code PARAM_SET} with a {@code PARAM_VALUE} carrying what it <i>actually</i> stored, which is not
  * always what was asked: out-of-range values are clamped and a float lands in whatever integer width
  * the parameter really is. So the exchange completes with {@link ParameterOutcome.Status#MISMATCH}
- * unless the echoed value is bit-for-bit what was requested. This is what makes a Tier-A write
+ * unless the echoed value is bit-for-bit what was requested. This is what makes a write
  * safely reportable to an operator ("yes, with before/after values").
  *
  * <h2>How a 16-character name fits in a 64-bit discriminator</h2>

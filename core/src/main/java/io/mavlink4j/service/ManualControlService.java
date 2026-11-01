@@ -51,8 +51,8 @@ import java.util.concurrent.CompletableFuture;
  * bounded by the ceiling rather than being the sum of the two paths.
  *
  * <h2>Re-resolution every tick, never cached</h2>
- * A peer's {@code sourceAddress} refreshes on every inbound datagram and its claim can (rarely)
- * re-elect (host policy, outside this library). Every {@link RcLinkRuntime} tick re-reads
+ * A peer's {@code sourceAddress} refreshes on every inbound datagram and can change at any time (a
+ * NAT rebind, a relay taking over). Every {@link RcLinkRuntime} tick re-reads
  * {@link PeerDirectory#peer} fresh; caching the target at {@link #engage} would let the sender keep
  * transmitting to a stale address after the vehicle moves. A tick that finds the target currently
  * unknown <b>pauses</b> — logged once on the transition, not fatal and not a busy-spin.

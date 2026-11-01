@@ -332,7 +332,7 @@ public final class FakeVehicle implements AutoCloseable {
     }
 
     /**
-     * Simulates this vehicle's transport address changing (a re-elected claim, a NAT rebind): closes the
+     * Simulates this vehicle's transport address changing (a NAT rebind, a relay taking over): closes the
      * current link and opens a fresh one to the same gateway under the identical MAVLink identity. Proves
      * a caller re-resolves a peer's address on every send rather than caching it.
      *

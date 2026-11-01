@@ -164,8 +164,8 @@ Who is out there, what am I waiting for, what runs periodically.
   the reply and `ParameterService` then compares the name exactly. **Both halves are required**: hashing
   alone would silently accept a colliding parameter's value. FNV-1a specifically because its constants can
   never drift, unlike `String#hashCode` (32-bit) or `Objects#hash` (no stability contract).
-- **`PeerDirectory` records protocol facts only.** Which vehicle a host application pins, claims or
-  re-elects is host policy, not library behaviour.
+- **`PeerDirectory` records protocol facts only.** Which vehicle a host application owns or may
+  command is host policy, not library behaviour.
 - **Peer identity is `(sysid, compid)`, never the transport address.** One link multiplexes several compids
   and NAT can move an address between packets from one system.
 - **`LinkHealth` drop rate** is expected-vs-received `seq` accounting per `(PeerId, LinkId)`, handling the

@@ -16,7 +16,7 @@ import java.util.Set;
 
 /**
  * Who is out there — read-only protocol facts, updated by {@link MavlinkSession} as frames arrive.
- * Deliberately carries no pin/claim/re-election logic: which sysid a host's device owns is host
+ * Deliberately carries no ownership or access logic: which sysid a host's device owns is host
  * policy, not a protocol fact, and belongs to the calling application. This interface only
  * ever answers "what has been observed," never "who is allowed to use it."
  */
