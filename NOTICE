@@ -1,0 +1,15 @@
+mavlink4j
+Copyright 2026 Vlad Tetyorko
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components:
+
+* io.dronefleet.mavlink:mavlink and mavlink-protocol (MIT License)
+  Copyright (c) dronefleet contributors. https://github.com/dronefleet/mavlink
+  Supplies the MAVLink message model and wire codec used by mavlink4j-core.
+
+* com.fazecast:jSerialComm (dual-licensed: GNU Lesser General Public License v3
+  or Apache License, Version 2.0). https://github.com/Fazecast/jSerialComm
+  Used only by the separate mavlink4j-serial artifact. mavlink4j elects the
+  Apache License, Version 2.0 terms.
