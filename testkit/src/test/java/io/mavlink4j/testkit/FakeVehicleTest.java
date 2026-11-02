@@ -78,6 +78,18 @@ class FakeVehicleTest {
         }
     }
 
+    /** The first frame a subscriber received, waiting up to {@link #AWAIT} for it to arrive. */
+    private static Frame firstOf(List<Frame> received) throws InterruptedException {
+        long deadline = System.nanoTime() + AWAIT.toNanos();
+        while (received.isEmpty()) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("no frame reached the subscriber");
+            }
+            Thread.sleep(20);
+        }
+        return received.get(0);
+    }
+
     @Test
     void aScriptedCommandIsAckedAndAnUnscriptedOneIsRecordedButLeftUnanswered() throws Exception {
         try (Rig rig = new Rig(Signing.off());
@@ -147,12 +159,7 @@ class FakeVehicleTest {
             List<Frame> heartbeats = new CopyOnWriteArrayList<>();
             rig.session.dispatcher().subscribe(MessageFilter.type(Heartbeat.class), heartbeats::add);
             try (FakeVehicle vehicle = FakeVehicle.builder("127.0.0.1", rig.port).sysid(24).signedWith(key).build()) {
-                long deadline = System.nanoTime() + AWAIT.toNanos();
-                while (heartbeats.isEmpty() && System.nanoTime() < deadline) {
-                    Thread.sleep(20);
-                }
-                assertFalse(heartbeats.isEmpty(), "the session accepted the signed heartbeat");
-                assertTrue(heartbeats.get(0).header().signed(), "and it was signed on the wire");
+                assertTrue(firstOf(heartbeats).header().signed(), "the signed heartbeat was signed on the wire");
             }
         }
     }
@@ -163,8 +170,8 @@ class FakeVehicleTest {
             List<Frame> heartbeats = new CopyOnWriteArrayList<>();
             rig.session.dispatcher().subscribe(MessageFilter.type(Heartbeat.class), heartbeats::add);
             try (FakeVehicle vehicle = FakeVehicle.builder("127.0.0.1", rig.port).sysid(25).build()) {
-                rig.awaitKnown(vehicle.id());
-                assertFalse(heartbeats.get(0).header().signed());
+                // Not awaitKnown: the session registers the peer before dispatching the frame to subscribers.
+                assertFalse(firstOf(heartbeats).header().signed());
             }
         }
     }
