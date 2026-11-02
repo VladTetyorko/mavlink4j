@@ -99,13 +99,6 @@ jobs:
         run: |
           git tag "v$VERSION" "$GITHUB_SHA"
           git push origin "v$VERSION"
-      - name: Aggregate javadoc
-        run: ./mvnw -B -pl core,serial,testkit javadoc:aggregate -DreportOutputDirectory=target/site -DdestDir=apidocs
-      - name: Publish javadoc to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: target/site/apidocs
       - name: Release notes from CHANGELOG.md
         run: |
           awk -v v="$VERSION" '
@@ -119,3 +112,12 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           body_path: release-notes.md
+      # The root (`.`) must be in -pl: aggregate runs on it and merges the listed modules into one site,
+      # written to target/reports/apidocs (javadoc plugin 3.10+).
+      - name: Aggregate javadoc
+        run: ./mvnw -B -pl .,core,serial,testkit javadoc:aggregate
+      - name: Publish javadoc to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/reports/apidocs
