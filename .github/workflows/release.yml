@@ -1,6 +1,7 @@
 name: release
 on:
-  # Actions, release, "Run workflow" on main: picks the next version from the latest v* tag, publishes, tags.
+  # Actions, release, "Run workflow" on the `release` branch: picks the next version from the latest v* tag,
+  # publishes, tags. Any other branch is refused.
   workflow_dispatch:
     inputs:
       bump:
@@ -11,7 +12,7 @@ on:
       version:
         description: Exact version (e.g. 1.2.0); overrides bump when set
         required: false
-  # A hand-pushed tag still releases exactly that version.
+  # A hand-pushed tag releases exactly that version, but only if the tagged commit is on `release`.
   push:
     tags: ['v*']
 
@@ -24,12 +25,22 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Allow releases only from the release branch
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            [ "$GITHUB_REF" = refs/heads/release ] || {
+              echo "::error::Run this workflow on the 'release' branch, not '$GITHUB_REF_NAME'."; exit 1; }
+          else
+            git fetch --no-tags origin release
+            git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD || {
+              echo "::error::Tag $GITHUB_REF_NAME points at a commit that is not on the 'release' branch."; exit 1; }
+          fi
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
