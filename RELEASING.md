@@ -27,7 +27,11 @@ Portal, pushes the aggregate javadoc to `gh-pages`, and creates the GitHub Relea
 ## Cutting a release
 
 1. Move the `CHANGELOG.md` entries under a `## [x.y.z]` heading (the release notes are cut from it).
-2. `git tag vx.y.z && git push origin vx.y.z`. The workflow sets every module version from the tag.
+2. Either run **Actions, release, Run workflow** on `main` and pick `patch`/`minor`/`major` (or type an
+   exact version). The workflow bumps the latest `v*` tag; the first release uses the pom version
+   without `-SNAPSHOT`. It pushes the `vx.y.z` tag itself, but only once the deploy has succeeded.
+   Or push the tag by hand: `git tag vx.y.z && git push origin vx.y.z`. Either way the workflow sets
+   every module version from the release version.
 3. The deployment lands in the portal **un-published** (`central.autoPublish=false`); review it at
    <https://central.sonatype.com/publishing> and press Publish. Pass `-Dcentral.autoPublish=true` in
    `release.yml` once the first release has gone through cleanly.
