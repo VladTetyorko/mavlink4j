@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -91,15 +92,19 @@ class RequestResponseTest {
         MatchKey key = key(2L);
         FrameSink sink = new SendSink((payload, target) -> {
             sentAttempts.add((Integer) payload);
-            // Simulate the vehicle: first an IN_PROGRESS-style reply shortly after the send, then a
-            // terminal reply well within the extension window -- neither should count as a retry.
-            delayed(() -> correlator.offer(key, frameOf(key, "in-progress")), 15);
-            delayed(() -> correlator.offer(key, frameOf(key, "terminal")), 60);
+            // The vehicle answers IN_PROGRESS at once (the waiter is registered before send), so the
+            // 30 ms send timeout can never fire first, however slow the machine running the test is.
+            correlator.offer(key, frameOf(key, "in-progress"));
         });
         RequestResponse requestResponse = new RequestResponse(correlator, sink);
 
         CompletableFuture<Frame> future = requestResponse.exchange(TARGET, key, Duration.ofMillis(30), 2,
-                attempt -> attempt, reply -> "in-progress".equals(reply.payload()) ? Duration.ofMillis(200) : null);
+                attempt -> attempt, reply -> "in-progress".equals(reply.payload()) ? Duration.ofSeconds(5) : null);
+
+        // Well past the 30 ms send timeout: only the extension can still be holding the exchange open.
+        Thread.sleep(150);
+        assertFalse(future.isDone(), "the extension must keep the exchange waiting past the send timeout");
+        correlator.offer(key, frameOf(key, "terminal"));
 
         Frame result = future.get(3, TimeUnit.SECONDS);
         assertEquals("terminal", result.payload());
@@ -113,7 +118,7 @@ class RequestResponseTest {
         MatchKey key = key(3L);
         FrameSink sink = new SendSink((payload, target) -> {
             sentAttempts.add((Integer) payload);
-            delayed(() -> correlator.offer(key, frameOf(key, "in-progress")), 10);
+            correlator.offer(key, frameOf(key, "in-progress"));
             // deliberately never offers a terminal reply -- the extension window itself must time out
         });
         RequestResponse requestResponse = new RequestResponse(correlator, sink);
@@ -149,20 +154,6 @@ class RequestResponseTest {
 
     private static MatchKey key(long discriminator) {
         return new MatchKey(VEHICLE, 77, discriminator);
-    }
-
-    private static void delayed(Runnable action, long delayMillis) {
-        Thread t = new Thread(() -> {
-            try {
-                Thread.sleep(delayMillis);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
-            action.run();
-        }, "request-response-test-offer");
-        t.setDaemon(true);
-        t.start();
     }
 
     private static Frame frameOf(MatchKey key, Object payload) {
