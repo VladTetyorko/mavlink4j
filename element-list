@@ -1,0 +1,8 @@
+io.mavlink4j
+io.mavlink4j.codec
+io.mavlink4j.config
+io.mavlink4j.serial
+io.mavlink4j.service
+io.mavlink4j.session
+io.mavlink4j.testkit
+io.mavlink4j.transport
