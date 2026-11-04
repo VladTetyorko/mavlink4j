@@ -1,6 +1,6 @@
 # Releasing
 
-A release is a tag. `release.yml` runs on `v*`, signs, publishes to Maven Central through the Central
+A release is a tag on the `release` branch. `release.yml` signs, publishes to Maven Central through the Central
 Portal, pushes the aggregate javadoc to `gh-pages`, and creates the GitHub Release from `CHANGELOG.md`.
 
 ## One-time owner setup (B1)
@@ -24,25 +24,49 @@ Portal, pushes the aggregate javadoc to `gh-pages`, and creates the GitHub Relea
 
 `GITHUB_TOKEN` is provided by Actions; nothing else is needed.
 
+## Release gates
+
+Nothing reaches Maven Central unless every gate passes, in this order:
+
+| Gate | Where | Stops |
+|---|---|---|
+| `release` accepts only PRs, merge commits only, no force push or deletion | ruleset `release branch` | direct pushes, rewritten history |
+| A PR into `release` must come from `main` of this repository | CI job `release-pr-source` | feature branches and forks going straight to a release |
+| Full test matrix (Linux JDK 17/21, Windows, macOS) and SITL | CI jobs `verify`, `sitl`, required on the PR | broken or platform-specific code |
+| `release-preflight.sh`: Central bundle has exactly parent + core/serial/testkit with sources and javadoc, no `skipPublishing`, aggregate javadoc builds | CI job `release-preflight`, required on the PR | an upload that silently skips, ships sitl/examples, or lacks javadoc; a broken gh-pages step |
+| `actionlint` on all workflows | CI job `actionlint`, required on the PR | workflow typos, bad expressions, shell mistakes |
+| The release workflow runs only on `release` (or a `v*` tag on a `release` commit) | `release.yml`, first step | releases from any other branch |
+| A green `ci` run exists for the exact commit being released | `release.yml` | releasing a merge commit CI has not passed (or is still running) |
+| Preflight again with the real version, before anything is signed or uploaded | `release.yml` | version-specific surprises |
+| `v*` tags cannot be moved or deleted | ruleset `release tags` | rewriting a published version |
+
+The tag is pushed only after the upload succeeded, and the plugin waits until the Portal has validated
+the deployment, so a rejected bundle fails the run instead of passing silently.
+
+Run the preflight locally before opening a PR to `release` (it works on a temporary copy):
+
+    .github/scripts/release-preflight.sh
+
+### Installing the rulesets (one time)
+
+Settings, Rules, Rulesets, New ruleset, **Import a ruleset**, once per file in `.github/rulesets/`:
+`release-branch.json`, `release-tags.json`, `main-branch.json`. The required check names in
+`release-branch.json` are the CI job names; rename a job and you must update the ruleset too.
+
 ## Cutting a release
 
-1. Move the `CHANGELOG.md` entries under a `## [x.y.z]` heading (the release notes are cut from it).
-2. Bring `release` up to date with `main` (`git checkout release && git merge --ff-only main && git push`).
-   Releases are built only from the `release` branch; `main` is the default development branch.
-3. Either run **Actions, release, Run workflow** on `release` and pick `patch`/`minor`/`major` (or type an
-   exact version). The workflow bumps the latest `v*` tag; the first release uses the pom version
-   without `-SNAPSHOT`. It pushes the `vx.y.z` tag itself, but only once the deploy has succeeded.
-   Or tag a commit on `release` by hand: `git tag vx.y.z && git push origin vx.y.z` (a tag on a commit
-   that is not on `release` fails the run). Either way the workflow sets
-   every module version from the release version.
-4. The deployment lands in the portal **un-published** (`central.autoPublish=false`); review it at
-   <https://central.sonatype.com/publishing> and press Publish. Pass `-Dcentral.autoPublish=true` in
-   `release.yml` once the first release has gone through cleanly.
+1. Move the `CHANGELOG.md` entries under a `## [x.y.z]` heading on `main` (the release notes are cut from it).
+2. Open a PR from `main` into `release`. Wait for every required check, then merge it (merge commit).
+3. Wait for the `ci` run on the `release` push to finish green.
+4. Run **Actions, release, Run workflow** on `release` and pick `patch`/`minor`/`major` (or type an exact
+   version). The workflow bumps the latest `v*` tag and pushes the new tag itself, after the upload.
+5. The deployment lands in the portal **un-published** (`central.autoPublish=false`); review it at
+   <https://central.sonatype.com/publishing/deployments> and press Publish.
 
 Published modules: `mavlink4j-core`, `mavlink4j-serial`, `mavlink4j-testkit`. `mavlink4j-sitl` and the
-examples are never published (`maven.deploy.skip`; `sitl` also sets `skipPublishing`).
+examples are never published: the root pom's `release` profile lists them in the central plugin's `excludeArtifacts`. Do not set `skipPublishing` in a module: the bundle is uploaded from the last module (`sitl`), so it would cancel the whole upload.
 
 ## Local dry run
 
-`./mvnw -B -Prelease verify` signs locally and needs the key in your keyring; without it, run plain
-`./mvnw -B verify`, which already builds the sources and javadoc jars Central requires.
+`.github/scripts/release-preflight.sh` builds the exact Central bundle without signing or uploading.
+`./mvnw -B -Prelease verify` additionally signs, and needs the key in your keyring.

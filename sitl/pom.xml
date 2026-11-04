@@ -14,7 +14,6 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <skipPublishing>true</skipPublishing>
         <testcontainers.version>2.0.5</testcontainers.version>
         <!-- Docker-free default build: tests compile but do not run. -Psitl flips it. -->
         <skipTests>true</skipTests>

@@ -317,6 +317,13 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
+                            <!-- The bundle is uploaded once, from the reactor's LAST module (sitl), so these two
+                                 are excluded here, never with skipPublishing in their own pom: that would skip
+                                 the whole upload. The plugin also ignores maven.deploy.skip. -->
+                            <excludeArtifacts>
+                                <excludeArtifact>mavlink4j-sitl</excludeArtifact>
+                                <excludeArtifact>mavlink4j-examples</excludeArtifact>
+                            </excludeArtifacts>
                             <!-- false: the deployment waits in the portal for a manual Publish click. -->
                             <autoPublish>${central.autoPublish}</autoPublish>
                         </configuration>

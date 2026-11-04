@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  actions: read   # to check that CI passed on the commit being released
 
 concurrency:
   group: release
@@ -83,12 +84,26 @@ jobs:
           fi
           echo "Releasing $version"
           echo "VERSION=$version" >> "$GITHUB_ENV"
-      - name: Install socat (serial pty tests)
-        run: sudo apt-get update && sudo apt-get install -y socat
+      # Tests are not rerun here: this gate requires that the full CI matrix already passed on this exact
+      # commit (a push to `release` runs it). Rerunning them would only add a chance of a flaky failure.
+      - name: Require a green CI run on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          green=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success" \
+                  --jq '.total_count')
+          if [ "$green" = 0 ]; then
+            echo "::error::No successful 'ci' run for $GITHUB_SHA. Wait for CI on 'release' to finish green, then rerun."
+            exit 1
+          fi
+      # The same checks CI ran, now with the real version: nothing is signed or uploaded yet.
+      - name: Release preflight
+        run: .github/scripts/release-preflight.sh "$VERSION"
       - name: Set the module versions
         run: ./mvnw -B versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
       - name: Sign and publish to Central Portal
-        run: ./mvnw -B -Prelease deploy
+        run: ./mvnw -B -Prelease deploy -DskipTests
         env:
           CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
           CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
@@ -112,12 +127,11 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           body_path: release-notes.md
-      # The root (`.`) must be in -pl: aggregate runs on it and merges the listed modules into one site,
-      # written to target/reports/apidocs (javadoc plugin 3.10+).
       - name: Aggregate javadoc
-        run: ./mvnw -B -pl .,core,serial,testkit javadoc:aggregate
+        id: javadoc
+        run: echo "dir=$(.github/scripts/aggregate-javadoc.sh)" >> "$GITHUB_OUTPUT"
       - name: Publish javadoc to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: target/reports/apidocs
+          publish_dir: ${{ steps.javadoc.outputs.dir }}

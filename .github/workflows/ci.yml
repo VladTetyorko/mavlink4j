@@ -52,3 +52,39 @@ jobs:
           cache-to: type=gha,mode=max
       - name: SITL smoke tests
         run: ./mvnw -B -Psitl -pl sitl -am verify
+
+  # Everything release.yml relies on except signing and uploading: bundle contents, javadoc site.
+  release-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+      - name: Release preflight
+        run: .github/scripts/release-preflight.sh
+
+  # Workflow files are code too: catches bad expressions, unknown inputs and shell mistakes in run blocks.
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color
+
+  # The release branch only ever receives main. Skipped (which counts as passing) for other PRs.
+  release-pr-source:
+    if: github.event_name == 'pull_request' && github.base_ref == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: A PR into release must come from main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$HEAD_REF" != main ] || [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "::error::PRs into 'release' must come from '$GITHUB_REPOSITORY:main', not '$HEAD_REPO:$HEAD_REF'."
+            exit 1
+          fi
